@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Commit"
+  short_description: "Create git commits."
+  default_prompt: "Commit the staged changes."

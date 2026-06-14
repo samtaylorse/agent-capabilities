@@ -1,0 +1,4 @@
+interface:
+  display_name: "Godot Testing"
+  short_description: "Run headless Godot validation after scene or script changes"
+  default_prompt: "Use $godot-testing to validate Godot scene and script changes by running the local Godot console executable headlessly and checking the log for load or parse errors."
