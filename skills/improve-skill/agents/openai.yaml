@@ -1,0 +1,4 @@
+interface:
+  display_name: "Improve Skill"
+  short_description: "Improve a skill after using it"
+  default_prompt: "Use $improve-skill to inspect the most recent skill run and update the skill if useful."
