@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coding Loop"
+  short_description: "Iterate implementation and review to convergence"
+  default_prompt: "Use $coding-loop to deliver this coding task through fresh implementation, fixed-base review, batched repair, and verification until it converges."
