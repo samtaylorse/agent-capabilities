@@ -1,11 +1,26 @@
 ---
 name: coding-loop
 description: Drive a coding task to convergence through fresh-context implementation, independent fixed-base review, batched repair, and verification. Use when a user wants an orchestrated producer-reviewer loop for task details supplied as a prompt, issue, ticket, specification, failing test, or other authoritative input.
+disable-model-invocation: true
 ---
 
 # Coding Loop
 
 Orchestrate a coding task through produce, review, and repair cycles until the implementation is demonstrably complete. The task input may take any form; a ticket is only one possible specification source.
+
+## Preflight Skill Dependencies
+
+This loop requires three dependency skills:
+
+- producer testing: `tdd`
+- review: `code-review`
+- commit: `git-commit`
+
+Before planning work or dispatching a subagent, resolve these exact dependencies from the orchestrator's already-available skill catalog metadata. Check availability by name and description only; do not open dependency `SKILL.md` files during preflight, scan every installed skill, or ask subagents to enumerate or preload skills.
+
+**Stop condition:** if any dependency skill is unavailable to the subagents, stop before creating worktrees or changing code. Report every missing skill by name and wait for the user to install it. All three dependencies are mandatory; do not silently substitute other testing, review, or commit workflows.
+
+Record the three confirmed skill names in the run contract. A producer loads only `tdd` when the Produce phase begins, then loads `git-commit` separately immediately before it creates or amends a commit. A reviewer loads only `code-review` when its role begins.
 
 ## Freeze the Contract
 
@@ -14,8 +29,9 @@ Before the first implementation pass, record:
 - authoritative task inputs and repository instructions
 - observable acceptance criteria, the evidence that will prove each one, and explicit exclusions
 - the base commit that review will use as its fixed point
-- required verification commands and manual checks
+- agreed test seams, required verification commands, and manual checks
 - the worktree, file ownership, and requested commit shape
+- confirmed availability of `tdd`, `code-review`, and `git-commit`
 - the pass limit, defaulting to three producer-reviewer passes
 
 Resolve task inputs into one frozen contract without rewriting their meaning. Before implementation, map every acceptance criterion to a test, inspection, or manual observation that can prove it. Record reasonable assumptions; ask only when an ambiguity would materially change the result. A requirement change starts a new contract rather than silently moving the current review target.
@@ -26,21 +42,21 @@ Keep a compact ledger of the base commit, current task commit, pass number, find
 
 ## Produce
 
-Assign a fresh-context producer subagent with the complete contract, relevant source paths, repository instructions, worktree, base commit, owned files, and verification commands. Require the designated implementation skill when the user or environment specifies one.
+Assign a fresh-context producer subagent with the complete contract, relevant source paths, repository instructions, worktree, base commit, owned files, and verification commands. Require it to load `tdd` before choosing seams or changing code. The producer does not invoke the review workflow.
 
 The producer must:
 
-1. Inspect the affected system and confirm the contract's acceptance evidence is feasible.
-2. Implement the smallest coherent change that satisfies the whole contract.
-3. Add or update tests for changed behavior when the repository supports them.
-4. Run the most relevant checks, then self-review the full `base..HEAD` change for omissions, regressions, and unrelated edits.
-5. Create exactly one clean task commit unless the contract requests a different commit shape.
+1. Inspect the affected system and confirm the contract's acceptance evidence and agreed test seams are feasible.
+2. Follow the `tdd` skill at the agreed seams. When a required criterion cannot be exercised test-first, preserve equivalent observable evidence and report the reason.
+3. Implement the smallest coherent change that satisfies the whole contract. Run the nearest focused tests and typechecking or equivalent static checks regularly after coherent slices.
+4. Once the implementation is stable, run the full required suite once, then self-review the complete `base..HEAD` change for omissions, regressions, and unrelated edits.
+5. Immediately before committing, load the `git-commit` skill and follow it to create exactly one clean task commit unless the contract requests a different commit shape.
 
 Return the task commit, files changed, acceptance evidence, commands and results, and any residual uncertainty. Review begins only after this handoff is complete.
 
 ## Review
 
-Assign a separate fresh-context reviewer subagent with the same contract, repository instructions, worktree, fixed base commit, current task commit, and verification expectations. Require the designated review skill when one is specified.
+Assign a separate fresh-context reviewer subagent with the same contract, repository instructions, worktree, fixed base commit, current task commit, and verification expectations. Require it to load `code-review` before reviewing.
 
 The reviewer inspects the repository and `base..task` range directly rather than a copied diff. It reviews both specification fit and repository standards, including tests and compatibility requirements.
 
@@ -53,12 +69,12 @@ A finding is actionable when correcting it is necessary for the contract, correc
 
 ## Repair
 
-If actionable findings remain, assign a new fresh-context producer the entire finding batch, the unchanged contract, and the current ledger. The producer resolves the batch as one pass, reruns affected verification, and records one disposition per finding:
+If actionable findings remain, assign a new fresh-context producer the entire finding batch, the unchanged contract, and the current ledger. It loads `tdd`, resolves the batch as one pass, runs focused checks while editing, reruns the full affected verification before committing, and records one disposition per finding:
 
 - `fixed`, with evidence; or
 - `contested`, with concrete evidence that the finding is invalid or outside the contract.
 
-For single-commit delivery, amend the existing task commit and update its SHA. Preserve the original base commit.
+For single-commit delivery, load the `git-commit` skill immediately before amending the existing task commit, then update its SHA. Preserve the original base commit.
 
 Assign a new fresh-context reviewer against that same base. Give it the prior finding IDs and dispositions so it verifies closure, while still reviewing the complete current range for regressions or newly exposed issues. New findings must meet the same actionable bar.
 
