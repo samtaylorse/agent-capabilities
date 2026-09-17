@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: Use when the user asks Codex to create or help with a git commit.
+description: Use when the user asks to create or help with a git commit.
 ---
 
 # Git Commit
