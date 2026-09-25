@@ -1,0 +1,6 @@
+interface:
+  display_name: "Finish Task"
+  short_description: "Rebase a task branch and merge it into main"
+  default_prompt: "Use $finish-task to rebase this task branch on main and merge it into main."
+policy:
+  allow_implicit_invocation: false
