@@ -1,17 +1,15 @@
 # When to Mock
 
-Mock at **system boundaries** only:
+Prefer real dependencies (the functions, modules, or services the code uses). In tests, use replacements such as mocks, stubs, or fakes at system boundaries to control expensive, unavailable, nondeterministic, or destructive effects:
 
 - External APIs (payment, email, etc.)
 - Databases (sometimes - prefer test DB)
 - Time/randomness
 - File system (sometimes)
 
-Don't mock:
+Replacements for internal dependencies can be justified when they expose a stable contract or make an important failure mode controllable. Record the reason and prefer outcome assertions over incidental call structure. Avoid replacing the behavior the test is meant to verify. For persistence and protocol semantics, use representative integration tests alongside these replacements so the fake cannot silently define the contract.
 
-- Your own classes/modules
-- Internal collaborators
-- Anything you control
+Keep these choices proportional to the risk and repository conventions.
 
 ## Designing for Mockability
 

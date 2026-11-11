@@ -1,97 +1,46 @@
 ---
 name: coding-loop
-description: Drive a coding task to convergence through fresh-context implementation, independent fixed-base review, batched repair, and verification. Use when a user wants an orchestrated producer-reviewer loop for task details supplied as a prompt, issue, ticket, specification, failing test, or other authoritative input.
+description: Deliver a coding task through implementation in the current worker chat, independent review, batched repair, and verification. Use when explicitly asked to run the coding loop on a prompt, issue, ticket, specification, or failing test.
 disable-model-invocation: true
 ---
 
 # Coding Loop
 
-Orchestrate a coding task through produce, review, and repair cycles until the implementation is demonstrably complete. The task input may take any form; a ticket is only one possible specification source.
+The chat running this skill owns implementation and repair. It may be an isolated task worker chat or thread started by a long-lived orchestrator, or the user's current chat. Use `tdd` for implementation and a separate reviewer subagent using `code-review` for independent review. If implementation delegation is justified by task size, independent work streams, or context recovery, prefer isolated worker chats or threads; use implementation subagents only when explicitly requested by the user.
 
-## Preflight Skill Dependencies
+## Establish the Task
 
-This loop requires three dependency skills:
+Resolve `tdd` and `code-review`, preferring explicit skill paths supplied by the caller, then readable sibling skill folders in this collection, then available skill metadata. Resolve `git-commit` the same way when delivery requires commits. Check availability from metadata or supplied paths without preloading dependency bodies or scanning every installed skill. Load each dependency when its phase begins. If a required dependency is inaccessible, report it before changing code. Record the resolved paths so delegated reviewers use the intended versions.
 
-- producer testing: `tdd`
-- review: `code-review`
-- commit: `git-commit`
+Inspect the affected system, then record a compact task contract:
 
-Before planning work or dispatching a subagent, resolve these exact dependencies from the orchestrator's already-available skill catalog metadata. Check availability by name and description only; do not open dependency `SKILL.md` files during preflight, scan every installed skill, or ask subagents to enumerate or preload skills.
+- authoritative inputs, repository instructions, observable acceptance criteria, and exclusions
+- evidence for each criterion, test seams, verification commands, and manual checks
+- fixed review base, worktree, owned files, and requested delivery or commit shape
+- pass limit, defaulting to three implementation-review passes
 
-**Stop condition:** if any dependency skill is unavailable to the subagents, stop before creating worktrees or changing code. Report every missing skill by name and wait for the user to install it. All three dependencies are mandatory; do not silently substitute other testing, review, or commit workflows.
+Keep seams provisional until inspection establishes feasibility; follow `tdd` for seam selection and any required user agreement. Record reasonable assumptions and ask only when ambiguity materially changes the result. Requirement changes create a new contract revision and explicitly identify affected evidence and review scope.
 
-Record the three confirmed skill names in the run contract. A producer loads only `tdd` when the Produce phase begins, then loads `git-commit` separately immediately before it creates or amends a commit. A reviewer loads only `code-review` when its role begins.
+Store the contract and compact ledger in a task document at a repository-approved location, reusing an existing task file when possible. Record the base, current snapshot, pass, finding dispositions, verification evidence, and next action so another session can resume. Keep workflow notes out of the deliverable unless requested or conventional for the repository.
 
-## Freeze the Contract
+Use one loop for a single task. If the input contains separable work units, order them by dependency and run a loop for each. Parallel implementation requires isolated worktrees and disjoint file ownership.
 
-Before the first implementation pass, record:
+## Implement
 
-- authoritative task inputs and repository instructions
-- observable acceptance criteria, the evidence that will prove each one, and explicit exclusions
-- the base commit that review will use as its fixed point
-- agreed test seams, required verification commands, and manual checks
-- the worktree, file ownership, and requested commit shape
-- confirmed availability of `tdd`, `code-review`, and `git-commit`
-- the pass limit, defaulting to three producer-reviewer passes
+Load `tdd`, implement the smallest coherent change, and run focused tests and relevant static checks after coherent slices. When a criterion cannot be exercised test-first, record why and provide other observable evidence. Run required automated and manual verification before review, then self-review the complete task snapshot using `code-review`'s scope rules.
 
-Resolve task inputs into one frozen contract without rewriting their meaning. Before implementation, map every acceptance criterion to a test, inspection, or manual observation that can prove it. Record reasonable assumptions; ask only when an ambiguity would materially change the result. A requirement change starts a new contract rather than silently moving the current review target.
+Keep implementation and repair in this worker so knowledge carries across passes. Checkpoint commits are optional unless the contract requires them; preserve the requested final commit shape for delivery, defaulting to one clean task commit when commits are part of delivery. Load `git-commit` before creating or amending a commit. Amend only task-owned commits, preserving the original base.
 
-Use one loop for a single task. If the input contains separable work units, order them by dependency and run a loop for each. Parallel work requires isolated worktrees and disjoint file ownership.
+## Review and Repair
 
-Keep a compact ledger of the base commit, current task commit, pass number, findings and dispositions, verification results, and state.
+Freeze edits to the review snapshot. Launch one fresh-context reviewer subagent with the resolved `code-review` path, contract, repository instructions, worktree, base, snapshot identification, and verification expectations. Supply minimal implementation narrative. The reviewer follows `code-review` for scope, evidence, findings, and re-review; this skill owns only the scheduling and state transitions. Additional focused reviewers are optional when complexity or risk warrants them.
 
-## Produce
+Resolve the returned batch in this worker. Record each finding as fixed with evidence, contested with concrete evidence, or still open. Optional suggestions do not block convergence. Run affected checks after repairs and dispatch a fresh reviewer with the same base, updated snapshot, and previous IDs and dispositions. A contest remains unresolved until the reviewer accepts its evidence or the user adjudicates it.
 
-Assign a fresh-context producer subagent with the complete contract, relevant source paths, repository instructions, worktree, base commit, owned files, and verification commands. Require it to load `tdd` before choosing seams or changing code. The producer does not invoke the review workflow.
+## Converge and Deliver
 
-The producer must:
+Declare the loop clean only when every acceptance criterion has evidence, required verification passes, no blocking finding remains, and the deliverable has no unintended changes. Verification results apply to the snapshot checked: rerun affected verification and review when subsequent edits change behavior. Reuse results when only commit metadata changes and the reviewed tree is identical.
 
-1. Inspect the affected system and confirm the contract's acceptance evidence and agreed test seams are feasible.
-2. Follow the `tdd` skill at the agreed seams. When a required criterion cannot be exercised test-first, preserve equivalent observable evidence and report the reason.
-3. Implement the smallest coherent change that satisfies the whole contract. Run the nearest focused tests and typechecking or equivalent static checks regularly after coherent slices.
-4. Once the implementation is stable, run the full required suite once, then self-review the complete `base..HEAD` change for omissions, regressions, and unrelated edits.
-5. Immediately before committing, load the `git-commit` skill and follow it to create exactly one clean task commit unless the contract requests a different commit shape.
+Load `git-commit` if commits are requested, finalize the delivery shape, and confirm it preserves the reviewed content. Distinguish code failures from environmental or flaky failures; diagnose before retrying. Stop at the pass limit with unresolved findings, attempted repairs, verification state, and a recommendation for the user. Respect any explicit human approval gates.
 
-Return the task commit, files changed, acceptance evidence, commands and results, and any residual uncertainty. Review begins only after this handoff is complete.
-
-## Review
-
-Assign a separate fresh-context reviewer subagent with the same contract, repository instructions, worktree, fixed base commit, current task commit, and verification expectations. Require it to load `code-review` before reviewing.
-
-The reviewer inspects the repository and `base..task` range directly rather than a copied diff. It reviews both specification fit and repository standards, including tests and compatibility requirements.
-
-The reviewer must inspect the full range and every acceptance criterion before returning. Require one complete, deduplicated batch containing either:
-
-- actionable findings with stable IDs, severity, evidence, affected location, violated criterion or invariant, and the condition that would close each finding; or
-- an explicit statement that no actionable findings remain.
-
-A finding is actionable when correcting it is necessary for the contract, correctness, security, compatibility, or documented repository standards. Every blocking finding must name the violated criterion or invariant; otherwise label it non-blocking so preferences cannot hold the loop open. Exclude pre-existing defects outside the task range unless the change makes them newly relevant.
-
-## Repair
-
-If actionable findings remain, assign a new fresh-context producer the entire finding batch, the unchanged contract, and the current ledger. It loads `tdd`, resolves the batch as one pass, runs focused checks while editing, reruns the full affected verification before committing, and records one disposition per finding:
-
-- `fixed`, with evidence; or
-- `contested`, with concrete evidence that the finding is invalid or outside the contract.
-
-For single-commit delivery, load the `git-commit` skill immediately before amending the existing task commit, then update its SHA. Preserve the original base commit.
-
-Assign a new fresh-context reviewer against that same base. Give it the prior finding IDs and dispositions so it verifies closure, while still reviewing the complete current range for regressions or newly exposed issues. New findings must meet the same actionable bar.
-
-## Converge
-
-The loop is clean only when all of these are true:
-
-- every acceptance criterion has observable evidence
-- required automated and manual verification passes
-- no actionable review finding remains
-- the diff contains no unintended scope or unrelated changes
-- the requested commit shape is intact
-
-Run cheap, targeted checks during repair and the full required verification before declaring the loop clean. Distinguish code failures from environmental or flaky failures and record the evidence; retrying a command without a diagnostic does not advance the loop.
-
-Stop after the configured pass limit. If the loop is still open, present unresolved and contested findings, attempted repairs, verification state, and a recommendation, then ask the user to decide rather than continuing indefinitely.
-
-If the user specified human approval gates, stop at each gate, show the requested evidence, and wait for explicit approval before continuing.
-
-Report completion with the fixed base, final task commit, pass count, finding dispositions, and verification evidence.
+Update the task document and return the base, final snapshot or task commit, pass count, finding dispositions, acceptance evidence, verification results, and unresolved decisions to the user or parent orchestrator.

@@ -2,7 +2,7 @@
 
 ## Good Tests
 
-**Integration-style**: Test through real interfaces, not mocks of internal parts.
+Prefer real collaborators and interfaces used by callers; choose focused or integration tests according to the behavior and risk.
 
 ```typescript
 // GOOD: Tests observable behavior
@@ -17,7 +17,7 @@ test("user can checkout with valid cart", async () => {
 Characteristics:
 
 - Tests behavior users/callers care about
-- Uses public API only
+- Uses a stable interface with a meaningful contract
 - Survives internal refactors
 - Describes WHAT, not HOW
 - One logical assertion per test
@@ -35,17 +35,19 @@ test("checkout calls paymentService.process", async () => {
 });
 ```
 
-Red flags:
+Review these as signs of possible coupling, rather than automatic failures:
 
 - Mocking internal collaborators
 - Testing private methods
-- Asserting on call counts/order
+- Asserting on call counts/order that the contract does not require
 - Test breaks when refactoring without behavior change
 - Test name describes HOW not WHAT
-- Verifying through external means instead of interface
+- Inspecting storage details when persistence is not the behavior under test
+
+An interaction assertion can be appropriate when the interaction is the observable contract, such as charging an external payment provider once with the correct amount. A stable internal algorithm interface can also be a useful focused test surface without testing private implementation structure.
 
 ```typescript
-// BAD: Bypasses interface to verify
+// Weak evidence for caller-visible retrievability: checks storage only
 test("createUser saves to database", async () => {
   await createUser({ name: "Alice" });
   const row = await db.query("SELECT * FROM users WHERE name = ?", ["Alice"]);
@@ -59,6 +61,8 @@ test("createUser makes user retrievable", async () => {
   expect(retrieved.name).toBe("Alice");
 });
 ```
+
+For a persistence contract, direct database evidence can be necessary: verify a transaction rollback leaves no partial rows, for example. A read through the same cache or in-memory object may miss that defect. Choose evidence that can distinguish correct behavior from the relevant failure.
 
 **Tautological tests**: Expected value restates the implementation, so the test passes by construction.
 
