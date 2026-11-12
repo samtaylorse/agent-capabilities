@@ -2,5 +2,3 @@ interface:
   display_name: "Coding Loop"
   short_description: "Implement in this worker with independent review"
   default_prompt: "Use $coding-loop in this worker to implement the task with TDD, independent review, batched repair, and verification."
-policy:
-  allow_implicit_invocation: false

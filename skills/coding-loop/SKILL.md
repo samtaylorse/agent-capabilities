@@ -1,7 +1,6 @@
 ---
 name: coding-loop
-description: Deliver a coding task through implementation in the current worker chat, independent review, batched repair, and verification. Use when explicitly asked to run the coding loop on a prompt, issue, ticket, specification, or failing test.
-disable-model-invocation: true
+description: Deliver a coding task through implementation in the current worker chat, independent review, batched repair, and verification. Use when implementing a task through the coding loop, including a worker handoff, from a prompt, issue, ticket, specification, or failing test.
 ---
 
 # Coding Loop
